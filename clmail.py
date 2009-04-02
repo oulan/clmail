@@ -5,17 +5,12 @@
 import smtplib, datetime
 import sys, getopt
 import mimetypes
-
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEBase import MIMEBase
-from email.MIMEMultipart import MIMEMultipart
-from email import Utils, encoders
+import email
 
 class CLMailer:
     def __init__(self):
         self.server = None
-        self.mailMsg = MIMEMultipart()
+        self.mailMsg = email.MIMEMultipart()
 
     def bindServer(self, server, port, SSL):
         if not SSL:
@@ -39,32 +34,32 @@ class CLMailer:
         self.mailMsg['bcc'] = bccAddr
 
     def mailSubject(self, subject, encode):
-        self.mailMsg['subject'] = Header(subject, encode)
+        self.mailMsg['subject'] = email.Header(subject, encode)
                 
     def mailDate(self):
-        self.mailMsg['Date'] = Utils.formatdate(localtime = 1)
+        self.mailMsg['Date'] = email.Utils.formatdate(localtime = 1)
 
     def mailMessage(self, message):
-        textBody = MIMEText(message, _subtype = 'plain')
+        textBody = email.MIMEText(message, _subtype = 'plain')
         self.mailMsg.attach(textBody)
                 
     def prepareAttachs(self, attachFiles):
         for att in attachFiles:
             try:
                 attFile = file(att, 'rb')
-                mimeType, mimeEncoding = mimetypes.guess_type(att)
+                mimeType, mimeEncoding = email.mimetypes.guess_type(att)
                 if mimeEncoding or (mimeType is None):
                     mimeType = "application/octet_stream"
 
                 mainType, subType = mimeType.split("/")
                 if "text" == mainType:
                     print "attaching(text): %s" % att
-                    attText = MIMEText(attFile.read(), _subtype=subType)
+                    attText = email.MIMEText(attFile.read(), _subtype=subType)
                 else:
                     print "attaching(binary): %s(%s,%s)" % (att, mainType, subType)
-                    attText = MIMEBase(mainType, subType)
+                    attText = email.MIMEBase(mainType, subType)
                     attText.set_payload(attFile.read())
-                    encoders.encode_base64(attText)
+                    email.encoders.encode_base64(attText)
                 attText.add_header("Content-Disposition", "attachment", filename=att)
                 print attText.as_string()
                 attFile.close()                
