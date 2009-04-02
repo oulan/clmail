@@ -74,7 +74,7 @@ class CLMailer:
                 
     def startTask(self):
         print "starting send mail..."
-        print self.mailMsg.as_string()
+        #print self.mailMsg.as_string()
         self.server.sendmail(self.mailMsg['from'], self.mailMsg['to'],
                              self.mailMsg.as_string())
         print "mail sent."
@@ -197,7 +197,11 @@ clmail -[u|p|a|s|p|h]
 --attachfile, -a: 邮件附件
 
 例如：
-clmail -u u01 -p u01pwd -s smtp.163.com -o 110 -m "test message"
+clmail.py -u 用户名 -p 密码 -H smtp服务器 -s Hello -t
+ 目标邮箱 -f 你的邮箱 -a wx.txt -m alllow -a wow.gif
+
+如：
+clmail.py -u abc@163.com -p 123 -H smtp.163.com -s 标题 -t abc@163.com -f abc@163.com -a wx.txt -m 邮箱正文 -a wow.gif
 
 开发者：欧兰辉(ouland@fairybeans.com)
 最新版本请访问：http://www.oulan.com/clmail/
