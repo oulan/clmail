@@ -8,12 +8,13 @@ import mimetypes
 
 from email.Header import Header
 from email.MIMEText import MIMEText
+from email.MIMEBase import MIMEBase
 from email.MIMEMultipart import MIMEMultipart
-from email import Utils, Encoders
+from email import Utils, encoders
 
 class CLMailer:
     def __init__(self):
-        self.server = Null
+        self.server = None
         self.mailMsg = MIMEMultipart()
 
     def bindServer(self, server, port, SSL):
@@ -41,7 +42,7 @@ class CLMailer:
         self.mailMsg['subject'] = Header(subject, encode)
                 
     def mailDate(self):
-        self.mailMsg['Date'] = utils.formatdate(localtime = 1)
+        self.mailMsg['Date'] = Utils.formatdate(localtime = 1)
 
     def mailMessage(self, message):
         textBody = MIMEText(message, _subtype = 'plain')
@@ -50,31 +51,32 @@ class CLMailer:
     def prepareAttachs(self, attachFiles):
         for att in attachFiles:
             try:
-                attFile = open(att, 'rb')
+                attFile = file(att, 'rb')
                 mimeType, mimeEncoding = mimetypes.guess_type(att)
                 if mimeEncoding or (mimeType is None):
                     mimeType = "application/octet_stream"
 
-                mainType, subType = mimeType.split('/')
-                if 'text' == mainType:
-                    attText = MIMEText(attFile.read(), _subtype = subtype)
+                mainType, subType = mimeType.split("/")
+                if "text" == mainType:
+                    print "attaching(text): %s" % att
+                    attText = MIMEText(attFile.read(), _subtype=subType)
                 else:
-                    attText = MIMEBase(mainType, subtype)
+                    print "attaching(binary): %s(%s,%s)" % (att, mainType, subType)
+                    attText = MIMEBase(mainType, subType)
                     attText.set_payload(attFile.read())
-                    Encoders.encode_base64(attText)
-                    
+                    encoders.encode_base64(attText)
                 attText.add_header("Content-Disposition", "attachment", filename=att)
-                attFile.close()
-            except:
-                attText = ''
-            if attText <> '':
+                print attText.as_string()
+                attFile.close()                
                 self.mailMsg.attach(attText)
+            except:
+                pass
                 
     def startTask(self):
         print "starting send mail..."
+        print self.mailMsg.as_string()
         self.server.sendmail(self.mailMsg['from'], self.mailMsg['to'],
                              self.mailMsg.as_string())
-        print "preparing attachments..."
         print "mail sent."
 
 class CLMailApp:
@@ -87,7 +89,7 @@ class CLMailApp:
         self.ccAddr = ''
         self.bccAddr = ''
         self.serverAddr = 'localhost'
-        self.serverPort = 110
+        self.serverPort = 25
         self.mailMsg = ''
         self.mailMsgTextFile = ''
         self.encode = 'gb2312'
@@ -96,22 +98,28 @@ class CLMailApp:
         self.attachFiles = []
 
     def doMailTask(self):
-        print self.attachFiles
-        print self.mailMsg
-        print "-----------------------"
         mailer = CLMailer()
         try:
             mailer.bindServer(self.serverAddr, self.serverPort, self.enableSSL)
             okToSend = True
+            print "authenticating..."
             if self.userName <> "":
                 okToSend = mailer.checkLogin(self.userName, self.password)
-            mailer.fromUser(self.fromAddr)
-            mailer.toUser(self.toAddr, self.ccAddr, self.bccAddr)
-            mailer.mailSubject(self.subject, self.encode)
-            mailer.mailDate()
-            mailer.mailMessage(self.mailMsg)
-            mailer.prepareAttachs(attachFiles)
             if okToSend:
+                print "mail setting..."
+                print "from:"
+                mailer.fromUser(self.fromAddr)
+                print "to:"
+                mailer.toUser(self.toAddr, self.ccAddr, self.bccAddr)
+                print "subject:%s" % self.subject
+                mailer.mailSubject(self.subject, self.encode)
+                print "date"
+                mailer.mailDate()
+                print "body:%s" % self.mailMsg
+                mailer.mailMessage(self.mailMsg)
+                print "attachments:%d" % len(self.attachFiles)
+                mailer.prepareAttachs(self.attachFiles)
+                print "start mail:"
                 mailer.startTask()
             else:
                 print "authentication error"
@@ -120,7 +128,7 @@ class CLMailApp:
         
     def testArgs(self):
         mailTask = True
-        opts, args = getopt.getopt(sys.argv[1:],'u:p:a:h:m:H:e', ['user', 'password'])
+        opts, args = getopt.getopt(sys.argv[1:],'u:p:f:t:C:B:H:s:P:ea:m:Th')
 
         if 0 == len(opts):
             return False
@@ -149,6 +157,7 @@ class CLMailApp:
                 if self.serverPort == '':
                     self.serverPort = 995
             elif optSwitch == '-a':
+                print "attachment = %s" % optParam
                 self.attachFiles.append(optParam)
             elif optSwitch == '-m':
                 self.mailMsg += optParam
